@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -19,7 +20,11 @@ func main() {
 
 	if config.ReShare.Enable {
 		go func() {
-			timezone, _ := time.LoadLocation("Asia/Shanghai")
+			timezone, err := time.LoadLocation("Asia/shanghai")
+			if err != nil {
+				log.Println(err.Error())
+				timezone = time.FixedZone("CST", 8*3600)
+			}
 			s := gocron.NewScheduler(timezone)
 			s.Every(config.ReShare.Interval).Seconds().Do(func() {
 				go baiduStorage.AutoReShare(config.ReShare)

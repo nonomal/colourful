@@ -48,8 +48,8 @@
 2. `server.port` 监听端口
 3. `reshare.enable` 是否开启自动扫描
 4. `reshare.ignore` 忽略的分享id
-5. `reshare.interval` 扫描间隔
-6. `reshare.errorretry` 重新分享时，如果出现错误，该分享id冷却时间
+5. `reshare.interval` 扫描间隔，单位秒
+6. `reshare.errorretry` 重新分享时，如果出现错误，该分享id冷却时间，单位秒
 7. `baidu.cookie` 百度云盘的cookie，如果为空则会尝试从环境变量中取`BAIDU_COOKIE`
 
 
