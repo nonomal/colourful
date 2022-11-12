@@ -1,4 +1,4 @@
-module github.com/xi-mad/colorful
+module github.com/xi-mad/colourful
 
 go 1.18
 

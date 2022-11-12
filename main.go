@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-co-op/gocron"
 	"github.com/gofiber/fiber/v2"
-	"github.com/xi-mad/colorful/config"
-	"github.com/xi-mad/colorful/storage"
+	"github.com/xi-mad/colourful/config"
+	"github.com/xi-mad/colourful/storage"
 )
 
 func main() {

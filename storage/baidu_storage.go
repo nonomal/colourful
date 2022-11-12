@@ -15,8 +15,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/robertkrimen/otto"
-	"github.com/xi-mad/colorful/config"
-	"github.com/xi-mad/colorful/util"
+	"github.com/xi-mad/colourful/config"
+	"github.com/xi-mad/colourful/util"
 )
 
 var vm *otto.Otto
