@@ -16,6 +16,11 @@
             prop="expiredType"
             :formatter="formatExpiredType"
           />
+          <el-table-column
+            label="文件id"
+            prop="fsIds"
+            :formatter="formatFsIds"
+          />
           <el-table-column label="浏览次数" prop="vCnt" />
           <el-table-column label="操作" min-width="120px">
             <template v-slot="scope">
@@ -79,6 +84,9 @@ export default {
     },
     formatTimestamp(row) {
       return this.moment(row.ctime * 1000).format("YYYY-MM-DD HH:mm:ss");
+    },
+    formatFsIds(row) {
+      return row.fsIds.join(",");
     },
     formatExpiredType(row) {
       const shareStatusMap = {
