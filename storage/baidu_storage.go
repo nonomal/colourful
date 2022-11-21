@@ -401,9 +401,17 @@ func (m *BaiduStorage) cancelshare(shareId string) ([]byte, error) {
 
 func (m *BaiduStorage) GetFileShare(c *fiber.Ctx) error {
 	fsId := c.Params("fsid")
-	sr, err := m.shareFiles()
+	sf, err := m.getFileShare(fsId)
 	if err != nil {
 		return err
+	}
+	return c.JSON(sf)
+}
+
+func (m *BaiduStorage) getFileShare(fsId string) (*ShareForever, error) {
+	sr, err := m.shareFiles()
+	if err != nil {
+		return nil, err
 	}
 	var shareId int64
 	var shortLink string
@@ -426,45 +434,45 @@ func (m *BaiduStorage) GetFileShare(c *fiber.Ctx) error {
 		}
 	}
 	if typicalPath == "分享的文件已被删除" {
-		return c.JSON(&ShareForever{Errno: -1, ShowMsg: "分享的文件已被删除"})
+		return &ShareForever{Errno: -1, ShowMsg: "分享的文件已被删除"}, nil
 	}
 	if find {
 		if expiredType == 0 || expiredType == 1 {
 			pr, err := m.getPasswd(fmt.Sprint(shareId))
 			if err != nil {
-				return err
+				return nil, err
 			}
-			return c.JSON(&ShareForever{ShortUrl: shortLink, Pwd: pr.Pwd, Url: shortLink + "?pwd=" + pr.Pwd, Errno: 0, ShowMsg: "已有分享未过期, 获取成功"})
+			return &ShareForever{ShortUrl: shortLink, Pwd: pr.Pwd, Url: shortLink + "?pwd=" + pr.Pwd, Errno: 0, ShowMsg: "已有分享未过期, 获取成功"}, nil
 		} else if expiredType == -1 {
 			data, pwd, err := m.reShare(fmt.Sprint(shareId))
 			if err != nil {
-				return err
+				return nil, err
 			}
 			rsr := &ReShareResult{}
 			json.Unmarshal(data, rsr)
 			if rsr.ErrNo != 0 {
-				return c.JSON(&ShareForever{Errno: -1, ShowMsg: rsr.ShowMsg})
+				return &ShareForever{Errno: -1, ShowMsg: rsr.ShowMsg}, nil
 			}
-			return c.JSON(&ShareForever{ShortUrl: rsr.ShortUrl, Pwd: pwd, Url: rsr.ShortUrl + "?pwd=" + pwd, Errno: 0, ShowMsg: "分享已过期, 重新分享成功"})
+			return &ShareForever{ShortUrl: rsr.ShortUrl, Pwd: pwd, Url: rsr.ShortUrl + "?pwd=" + pwd, Errno: 0, ShowMsg: "分享已过期, 重新分享成功"}, nil
 		}
 	} else {
 		pwd := util.RandomString(4)
 		fsids, err := strconv.ParseInt(fsId, 10, 64)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		pr, pwd, err := m.share([]int64{fsids}, pwd)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		rsr := &ReShareResult{}
 		json.Unmarshal(pr, rsr)
 		if rsr.ErrNo != 0 {
-			return c.JSON(&ShareForever{Errno: rsr.ErrNo, ShowMsg: rsr.ShowMsg})
+			return &ShareForever{Errno: rsr.ErrNo, ShowMsg: rsr.ShowMsg}, nil
 		}
-		return c.JSON(&ShareForever{ShortUrl: rsr.ShortUrl, Pwd: pwd, Url: rsr.ShortUrl + "?pwd=" + pwd, Errno: 0, ShowMsg: "未找到已有分享, 新建分享成功"})
+		return &ShareForever{ShortUrl: rsr.ShortUrl, Pwd: pwd, Url: rsr.ShortUrl + "?pwd=" + pwd, Errno: 0, ShowMsg: "未找到已有分享, 新建分享成功"}, nil
 	}
-	return c.JSON(&ShareForever{Errno: -1, ShowMsg: "未考虑到的情况, 请提交issue, 并附上相关信息, 谢谢"})
+	return &ShareForever{Errno: -1, ShowMsg: "未考虑到的情况, 请提交issue, 并附上相关信息, 谢谢"}, nil
 }
 
 func (m *BaiduStorage) reShare(shareId string) ([]byte, string, error) {
@@ -550,6 +558,10 @@ func (m *BaiduStorage) UserInfo(c *fiber.Ctx) error {
 }
 
 func (m *BaiduStorage) sign(s string) (string, error) {
+	return sign(s)
+}
+
+func sign(s string) (string, error) {
 	value, err := vm.Call("x", nil, s)
 	if err != nil {
 		return "", err
@@ -569,7 +581,7 @@ func (m *BaiduStorage) AutoReShare(conf config.ReShare) {
 	realIgnore := []int64{}
 	deleted := []int64{}
 	errors := map[int64]string{}
-	update := []int64{}
+	update := map[int64]string{}
 
 	statusMap := map[int]string{1: "分享失败", 2: "暂时不可访问", 3: "分享失败", 4: "审核未通过", 19: "已被冻结"}
 
@@ -626,26 +638,25 @@ func (m *BaiduStorage) AutoReShare(conf config.ReShare) {
 			continue
 		}
 
-		data, _, err := m.reShare(fmt.Sprint(v.ShareId))
-		if err != nil {
-			m.Lock.Lock()
-			m.ShareErrorMap[v.ShareId] = time.Now().Unix()
-			m.Lock.Unlock()
-			errors[v.ShareId] = err.Error()
-			continue
+		for _, fsid := range v.FsIds {
+			fs, err := m.getFileShare(fmt.Sprint(fsid))
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
+			if fs.Errno == 0 {
+				update[v.ShareId] = " 文件id: " + fmt.Sprint(fsid) + ", " + fs.ShowMsg + ", 新的连接: " + fs.Url
+			} else {
+				m.Lock.Lock()
+				m.ShareErrorMap[v.ShareId] = time.Now().Unix()
+				m.Lock.Unlock()
+				errors[v.ShareId] = "分享id: " + fmt.Sprint(v.ShareId) + ", 分享失败, 原因: " + fs.ShowMsg
+			}
+			time.Sleep(500 * time.Millisecond)
 		}
-		rsr := &ReShareResult{}
-		json.Unmarshal(data, rsr)
-		if rsr.ErrNo != 0 {
-			m.Lock.Lock()
-			m.ShareErrorMap[v.ShareId] = time.Now().Unix()
-			m.Lock.Unlock()
-			errors[v.ShareId] = rsr.ShowMsg
-			continue
-		}
-		update = append(update, v.ShareId)
 	}
-	logs := "\n成功更新: \n" + arrayToString(update, ",") +
+	logs := "\n尝试更新: \n" + mapToString(update) +
 		"\n分享未过期: \n" + arrayToString(notExpired, ",") +
 		"\n忽略: \n" + arrayToString(realIgnore, ",") +
 		"\n文件已删除: \n" + arrayToString(deleted, ",") +
@@ -662,7 +673,7 @@ func arrayToString(A []int64, delim string) string {
 func mapToString(m map[int64]string) string {
 	var s = ""
 	for k, v := range m {
-		s += fmt.Sprintf("%d: %s\n", k, v)
+		s += fmt.Sprintf("分享id: %d: %s\n", k, v)
 	}
 	return s
 }
