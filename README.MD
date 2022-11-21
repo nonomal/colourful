@@ -27,12 +27,19 @@
 3. 构建前端  
     `npm run build`  
 
-4. 运行后端  
+4. 运行go后端  
     `go mod tidy`  
     `go run main.go`   
 
-5. 构建后端  
+5. 构建go后端  
     `go build`  
+
+6. 运行python3后端  
+    `cd py-backend`  
+    `pip install -r requirements.txt`  
+    `python main.py`  
+    请确保你拥有python3环境  
+
 
 运行截图  
 
