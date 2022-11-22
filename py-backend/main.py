@@ -56,10 +56,11 @@ def get_file_share(fsid):
     return jsonify(baidu.get_file_share(fsid))
 
 
-scheduler = BackgroundScheduler()
-scheduler.add_job(func=baidu.auto_reshare, args=(conf.reshare,), trigger="interval", seconds=conf.reshare.interval)
-scheduler.start()
-atexit.register(lambda: scheduler.shutdown())
+if conf.reshare.enable:
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(func=baidu.auto_reshare, args=(conf.reshare,), trigger="interval", seconds=conf.reshare.interval)
+    scheduler.start()
+    atexit.register(lambda: scheduler.shutdown())
 
 if __name__ == '__main__':
     app.run(host=conf.server.host, port=conf.server.port)
