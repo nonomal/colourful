@@ -192,18 +192,17 @@ type BaiduStorage struct {
 	LoginInfo     *LoginInfo
 	Cookie        string
 	UserAgent     string
-	ShareErrorMap map[int64]int64
-	Lock          sync.Mutex
+	ReshareStatus *ReshareStatus
 }
 
-/*
-{
-"errno": 0,
-"newno": "",
-"request_id": 1305775965182272800,
-"show_msg": ""
+type ReshareStatus struct {
+	Lock          sync.Mutex
+	ShareErrorMap map[int64]int64
+	Success       map[int64]string
+	Faied         map[int64]string
+	Ignore        map[int64]string
 }
-*/
+
 type TestResult struct {
 	ErrNo     int       `json:"errno"`
 	NewNo     string    `json:"newno"`
@@ -309,7 +308,17 @@ type ShareForever struct {
 }
 
 func NewBaiduStorage(cookie string) *BaiduStorage {
-	baiduStorage := &BaiduStorage{ShareErrorMap: map[int64]int64{}, Lock: sync.Mutex{}, Cookie: cookie, UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"}
+	baiduStorage := &BaiduStorage{
+		ReshareStatus: &ReshareStatus{
+			Lock:          sync.Mutex{},
+			ShareErrorMap: map[int64]int64{},
+			Success:       map[int64]string{},
+			Faied:         map[int64]string{},
+			Ignore:        map[int64]string{},
+		},
+		Cookie:    cookie,
+		UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
+	}
 	err := baiduStorage.test()
 	if err != nil {
 		panic(err)
@@ -575,20 +584,15 @@ func (m *BaiduStorage) AutoReShare(conf config.ReShare) {
 		log.Println(err)
 		return
 	}
-	shields := []int64{}
-	wrongStatus := map[int64]string{}
-	notExpired := []int64{}
-	realIgnore := []int64{}
-	deleted := []int64{}
-	errors := map[int64]string{}
-	update := map[int64]string{}
 
 	statusMap := map[int]string{1: "分享失败", 2: "暂时不可访问", 3: "分享失败", 4: "审核未通过", 19: "已被冻结"}
 
 	for _, v := range shareFiles.ShareInfo {
 		// 已屏蔽
 		if v.Tag == 7 {
-			shields = append(shields, v.ShareId)
+			msg := fmt.Sprintf("时间: %s, 分享id: %d 文件名: %s | 已被屏蔽", now(), v.ShareId, v.TypicalPath)
+			m.ReshareStatus.Ignore[v.ShareId] = msg
+			log.Println(msg)
 			continue
 		}
 		/*
@@ -599,19 +603,25 @@ func (m *BaiduStorage) AutoReShare(conf config.ReShare) {
 			19: "已被冻结",
 		*/
 		if v.Status == 1 || v.Status == 2 || v.Status == 3 || v.Status == 4 || v.Status == 19 {
-			wrongStatus[v.ShareId] = statusMap[v.Status]
+			msg := fmt.Sprintf("时间: %s, 分享id: %d 文件名: %s | %s", now(), v.ShareId, v.TypicalPath, statusMap[v.Status])
+			m.ReshareStatus.Ignore[v.ShareId] = msg
+			log.Println(msg)
 			continue
 		}
 		// 0: 期限分享 1: 永久分享
 		if v.ExpiredType == 0 || v.ExpiredType == 1 {
-			notExpired = append(notExpired, v.ShareId)
+			msg := fmt.Sprintf("时间: %s, 分享id: %d 文件名: %s | 未过期", now(), v.ShareId, v.TypicalPath)
+			m.ReshareStatus.Ignore[v.ShareId] = msg
+			log.Println(msg)
 			continue
 		}
 		// 忽略
 		contains := false
 		for _, ig := range conf.Ignore {
 			if ig == v.ShareId {
-				realIgnore = append(realIgnore, v.ShareId)
+				msg := fmt.Sprintf("时间: %s, 分享id: %d 文件名: %s | 已忽略", now(), v.ShareId, v.TypicalPath)
+				m.ReshareStatus.Ignore[v.ShareId] = msg
+				log.Println(msg)
 				contains = true
 			}
 		}
@@ -619,22 +629,22 @@ func (m *BaiduStorage) AutoReShare(conf config.ReShare) {
 			continue
 		}
 
-		m.Lock.Lock()
-		value, ok := m.ShareErrorMap[v.ShareId]
-		m.Lock.Unlock()
+		value, ok := m.getErrorMap(v.ShareId)
 		if ok {
 			if time.Now().Unix()-value >= int64(conf.ErrorEetry) {
-				m.Lock.Lock()
-				delete(m.ShareErrorMap, v.ShareId)
-				m.Lock.Unlock()
+				m.deleteErrorMap(v.ShareId)
 			} else {
-				errors[v.ShareId] = "上次尝试分享失败"
+				msg := fmt.Sprintf("时间: %s, 分享id: %d 文件名: %s |上次尝试分享失败", now(), v.ShareId, v.TypicalPath)
+				m.ReshareStatus.Ignore[v.ShareId] = msg
+				log.Println(msg)
 				continue
 			}
 		}
 
 		if v.TypicalPath == "分享的文件已被删除" {
-			deleted = append(deleted, v.ShareId)
+			msg := fmt.Sprintf("时间: %s, 分享id: %d 文件名: %s | 已被删除", now(), v.ShareId, v.TypicalPath)
+			m.ReshareStatus.Ignore[v.ShareId] = msg
+			log.Println(msg)
 			continue
 		}
 
@@ -646,34 +656,61 @@ func (m *BaiduStorage) AutoReShare(conf config.ReShare) {
 			}
 
 			if fs.Errno == 0 {
-				update[v.ShareId] = " 文件id: " + fmt.Sprint(fsid) + ", " + fs.ShowMsg + ", 新的连接: " + fs.Url
+				msg := fmt.Sprintf("时间: %s, 分享id: %d 文件名: %s | %s, 新的链接是: %s", now(), v.ShareId, v.TypicalPath, fs.ShowMsg, fs.Url)
+				m.ReshareStatus.Success[v.ShareId] = msg
+				log.Println(msg)
 			} else {
-				m.Lock.Lock()
-				m.ShareErrorMap[v.ShareId] = time.Now().Unix()
-				m.Lock.Unlock()
-				errors[v.ShareId] = "分享id: " + fmt.Sprint(v.ShareId) + ", 分享失败, 原因: " + fs.ShowMsg
+				m.addErrorMap(v.ShareId)
+				msg := fmt.Sprintf("时间: %s, 分享id: %d 文件名: %s | 重新分享失败, 原因: %s", now(), v.ShareId, v.TypicalPath, fs.ShowMsg)
+				m.ReshareStatus.Faied[v.ShareId] = msg
+				log.Println(msg)
 			}
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
-	logs := "\n尝试更新: \n" + mapToString(update) +
-		"\n分享未过期: \n" + arrayToString(notExpired, ",") +
-		"\n忽略: \n" + arrayToString(realIgnore, ",") +
-		"\n文件已删除: \n" + arrayToString(deleted, ",") +
-		"\n惨遭屏蔽: \n" + arrayToString(shields, ",") +
-		"\n状态异常: \n" + mapToString(wrongStatus) +
-		"\n分享错误: \n" + mapToString(errors)
-	log.Println(logs)
 }
 
-func arrayToString(A []int64, delim string) string {
-	return strings.Trim(strings.Join(strings.Fields(fmt.Sprint(A)), delim), "[]")
-}
-
-func mapToString(m map[int64]string) string {
-	var s = ""
-	for k, v := range m {
-		s += fmt.Sprintf("分享id: %d: %s\n", k, v)
+func (m *BaiduStorage) Render(sep string) string {
+	content := "分享成功共: " + fmt.Sprint(len(m.ReshareStatus.Success)) + " 个" + sep
+	for _, v := range m.ReshareStatus.Success {
+		content += v + sep
 	}
-	return s
+	content += "分享失败共: " + fmt.Sprint(len(m.ReshareStatus.Faied)) + " 个" + sep
+	for _, v := range m.ReshareStatus.Faied {
+		content += v + sep
+	}
+	content += "忽略共: " + fmt.Sprint(len(m.ReshareStatus.Ignore)) + " 个" + sep
+	for _, v := range m.ReshareStatus.Ignore {
+		content += v + sep
+	}
+	return content
+}
+
+func (m *BaiduStorage) Reset() {
+	m.ReshareStatus.Success = map[int64]string{}
+	m.ReshareStatus.Faied = map[int64]string{}
+	m.ReshareStatus.Ignore = map[int64]string{}
+}
+
+func (m *BaiduStorage) addErrorMap(id int64) {
+	m.ReshareStatus.Lock.Lock()
+	m.ReshareStatus.ShareErrorMap[id] = time.Now().Unix()
+	m.ReshareStatus.Lock.Unlock()
+}
+
+func (m *BaiduStorage) deleteErrorMap(id int64) {
+	m.ReshareStatus.Lock.Lock()
+	delete(m.ReshareStatus.ShareErrorMap, id)
+	m.ReshareStatus.Lock.Unlock()
+}
+
+func (m *BaiduStorage) getErrorMap(id int64) (int64, bool) {
+	m.ReshareStatus.Lock.Lock()
+	value, ok := m.ReshareStatus.ShareErrorMap[id]
+	m.ReshareStatus.Lock.Unlock()
+	return value, ok
+}
+
+func now() string {
+	return time.Now().Format("2006-01-02 15:04:05")
 }

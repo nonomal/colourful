@@ -3,9 +3,10 @@ module github.com/xi-mad/colourful
 go 1.18
 
 require (
-	github.com/go-co-op/gocron v1.18.0
+	github.com/go-co-op/gocron v1.3.1
 	github.com/gofiber/fiber/v2 v2.39.0
 	github.com/robertkrimen/otto v0.0.0-20221025135307-511d75fba9f8
+	github.com/robfig/cron v1.2.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -16,7 +17,7 @@ require (
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/robfig/cron/v3 v3.0.1 // indirect
+	github.com/robfig/cron/v3 v3.0.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.40.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect

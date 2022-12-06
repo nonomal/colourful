@@ -26,6 +26,25 @@ type Config struct {
 	Server  Server  `yaml:"server"`
 	ReShare ReShare `yaml:"reshare"`
 	Baidu   Baidu   `yaml:"baidu"`
+	Notify  Notify  `yaml:"notify"`
+}
+
+type Notify struct {
+	Cron           string         `yaml:"cron"`
+	Enable         bool           `yaml:"enable"`
+	SctConfig      SctConfig      `yaml:"sct"`
+	PushPlusConfig PushPlusConfig `yaml:"push-plus"`
+}
+
+type SctConfig struct {
+	Enable  bool   `yaml:"enable"`
+	Key     string `yaml:"key"`
+	Channel string `yaml:"channel"`
+}
+type PushPlusConfig struct {
+	Enable  bool   `yaml:"enable"`
+	Token   string `yaml:"token"`
+	Channel string `yaml:"channel"`
 }
 
 func Load() *Config {
@@ -44,6 +63,24 @@ func Load() *Config {
 		} else {
 			log.Println("Baidu Cookie is empty in env")
 		}
+	}
+	if config.Notify.Cron == "" {
+		config.Notify.Enable = false
+	}
+	if config.Notify.SctConfig.Key == "" {
+		key, ok := os.LookupEnv("SCT_KEY")
+		if ok {
+			config.Notify.SctConfig.Key = key
+		}
+	}
+	if config.Notify.PushPlusConfig.Token == "" {
+		token, ok := os.LookupEnv("PUSH_PLUS_TOKEN")
+		if ok {
+			config.Notify.PushPlusConfig.Token = token
+		}
+	}
+	if config.Notify.PushPlusConfig.Channel == "" {
+		config.Notify.PushPlusConfig.Channel = "wechat"
 	}
 	log.Printf("Loaded config: %+v", config)
 	return config

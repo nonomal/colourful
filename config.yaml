@@ -6,8 +6,21 @@ reshare:
   enable: true
   ignore:
   - 123
-  interval: 30
+  interval: 300
   errorretry: 43200
 
 baidu:
   cookie: 
+
+
+notify:
+  enable: true
+  cron: "0 0 21 * * ? *"
+  sct: 
+    enable: true
+    key: 
+    channel: 9 
+  push-plus:
+    enable: true
+    token: 
+    channel: wechat 
