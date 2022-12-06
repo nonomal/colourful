@@ -8,7 +8,11 @@
           stripe
           :data="shareList.slice((page - 1) * pageSize, page * pageSize)"
         >
-          <el-table-column label="分享ID" prop="shareId" />
+          <el-table-column label="分享ID(点击打开自动分享链接)">
+            <template v-slot="scope">
+              <el-link :href="'/api/reshare/' + scope.row.shareId" type="primary" target="_blank">{{scope.row.shareId}}</el-link>
+            </template>
+          </el-table-column>
           <el-table-column label="分享文件" prop="typicalPath" />
           <el-table-column label="分享时间" :formatter="formatTimestamp" />
           <el-table-column
@@ -220,7 +224,7 @@ export default {
           this.clip.copy(link);
         }
       });
-    },
+    }
   },
 };
 </script>
@@ -228,5 +232,11 @@ export default {
 <style lang="scss">
 .el-row {
   margin-bottom: 20px;
+}
+.el-link {
+  margin-right: 8px;
+}
+.el-link .el-icon--right.el-icon {
+  vertical-align: text-bottom;
 }
 </style>

@@ -12,6 +12,7 @@
 - [x] 取消分享
 - [x] 获取一个文件的分享，从该链接获取的分享永远有效
 - [x] 定时扫描已有分享，重新分享过期的分享
+- [x] 推送分享结果到wechat等
 
 **如果您需要别的功能，请提交issue并附带描述。**  
 **如果本程序对您有帮助，欢迎star。**  
@@ -51,14 +52,27 @@
 ---
 
 ## 配置文件
-1. `server.host` 监听主机，本机为`127.0.0.1`，任意主机为`0.0.0.0`
-2. `server.port` 监听端口
-3. `reshare.enable` 是否开启自动扫描
-4. `reshare.ignore` 忽略的分享id
-5. `reshare.interval` 扫描间隔，单位秒
-6. `reshare.errorretry` 重新分享时，如果出现错误，该分享id冷却时间，单位秒
-7. `baidu.cookie` 百度云盘的cookie，如果为空则会尝试从环境变量中取`BAIDU_COOKIE`
-
+1. 服务器配置  
+`server.host` 监听主机，本机为`127.0.0.1`，任意主机为`0.0.0.0`  
+`server.port` 监听端口  
+2. 自动补档配置  
+`reshare.enable` 是否开启自动扫描  
+`reshare.ignore` 忽略的分享id  
+`reshare.interval` 扫描间隔，单位秒  
+`reshare.errorretry` 重新分享时，如果出现错误，该分享id冷却时间，单位秒  
+3. 百度云cookie  
+`baidu.cookie` 百度云盘的cookie，如果为空则会尝试从环境变量中取`BAIDU_COOKIE`
+4. 通知  
+`notify.enable` 是否启用通知, true or false  
+`notify.cron` 执行通知cron表达式, 可以参考`https://cron.qqe2.com/`  
+server酱通知 `https://sct.ftqq.com/`  
+`notify.sct.enable` 是否启用server酱通知, true or false  
+`notify.sct.key` server酱的key, 如果为空则会尝试从环境变量中取`SCT_KEY`  
+`notify.sct.channel` 推送的channel  
+push-plus通知 `https://www.pushplus.plus/`  
+`notify.push-plus.enable` 是否启用push-plus通知, true or false  
+`notify.push-plus.toke` push-plus的token, 如果为空则会尝试从环境变量中取`PUSH_PLUS_TOKEN`  
+`notify.push-plus.channel` 推送的channel  
 
 ---
 ## 接口
