@@ -15,12 +15,12 @@ cp-config:
 	cp config.yaml release/
 
 package:
-	tar -czvf release/$(name)-$(version)-linux-arm.tar.gz release/$(name)-$(version)-linux-arm
-	tar -czvf release/$(name)-$(version)-linux-arm64.tar.gz release/$(name)-$(version)-linux-arm64
-	tar -czvf release/$(name)-$(version)-linux-386.tar.gz release/$(name)-$(version)-linux-386
-	tar -czvf release/$(name)-$(version)-linux-amd64.tar.gz release/$(name)-$(version)-linux-amd64
-	tar -czvf release/$(name)-$(version)-windows-386.tar.gz release/$(name)-$(version)-windows-386.exe
-	tar -czvf release/$(name)-$(version)-windows-amd64.tar.gz release/$(name)-$(version)-windows-amd64.exe
+	tar -czvf release/$(name)-$(version)-linux-arm.tar.gz release/$(name)-$(version)-linux-arm release/config.yaml
+	tar -czvf release/$(name)-$(version)-linux-arm64.tar.gz release/$(name)-$(version)-linux-arm64 release/config.yaml
+	tar -czvf release/$(name)-$(version)-linux-386.tar.gz release/$(name)-$(version)-linux-386 release/config.yaml
+	tar -czvf release/$(name)-$(version)-linux-amd64.tar.gz release/$(name)-$(version)-linux-amd64 release/config.yaml
+	tar -czvf release/$(name)-$(version)-windows-386.tar.gz release/$(name)-$(version)-windows-386.exe release/config.yaml
+	tar -czvf release/$(name)-$(version)-windows-amd64.tar.gz release/$(name)-$(version)-windows-amd64.exe release/config.yaml
 	rm release/$(name)-$(version)-linux-arm
 	rm release/$(name)-$(version)-linux-arm64
 	rm release/$(name)-$(version)-linux-386
