@@ -1,5 +1,5 @@
 name = colorful
-version = v1.1.0
+version = v1.1.1
 
 build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -o release/$(name)-$(version)-linux-arm main.go
