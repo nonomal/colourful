@@ -84,6 +84,11 @@ push-plus通知 `https://www.pushplus.plus/`
    `/getfileshare/:fsid`   获取一个文件的分享，从该接口获取的分享永远有效，需要传递文件id(`:fsid` 替换为文件id)    
 
 ---
+## Docker部署
+你可以在这里查看关于docker部署的一些信息：https://hub.docker.com/r/namedlxd/colourful  
+如果你想运行在arm架构的服务器上，可以自行使用Dockerfile打包
+
+---
 ## 讨论
 有任何问题请提交issue，并附带相关信息。
 

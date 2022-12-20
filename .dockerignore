@@ -1,0 +1,7 @@
+.vscode
+front/node_modules/
+colorful.exe
+fornt/dist
+colorful
+.idea
+py-backend/__pycache__

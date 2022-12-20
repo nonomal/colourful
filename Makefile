@@ -1,4 +1,4 @@
-name = colorful
+name = colourful
 version = v1.1.1
 
 build-linux:
@@ -29,8 +29,11 @@ package:
 	rm release/$(name)-$(version)-windows-amd64.exe
 	rm release/config.yaml
 
+build-image:
+	docker build --build-arg NAME=$(name) --build-arg VERSION=$(version) -t namedlxd/$(name):$(version) .
+
 clean:
 	rm -rf release/*
 
-build: build-linux build-win cp-config package
+build: build-linux build-win cp-config build-image package
 
