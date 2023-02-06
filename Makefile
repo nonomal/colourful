@@ -1,5 +1,5 @@
 name = colourful
-version = v1.1.1
+version = v1.1.2
 
 build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -o release/$(name)-$(version)-linux-arm main.go
@@ -31,6 +31,7 @@ package:
 
 build-image:
 	docker build --build-arg NAME=$(name) --build-arg VERSION=$(version) -t namedlxd/$(name):$(version) .
+	docker push namedlxd/colourful:$(version)
 
 clean:
 	rm -rf release/*
