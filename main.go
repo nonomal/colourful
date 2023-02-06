@@ -23,6 +23,7 @@ func main() {
 
 	apiRoute := app.Group("/api")
 
+	apiRoute.Get("/files", baiduStorage.Files)
 	apiRoute.Get("/sharefiles", baiduStorage.ShareFiles)
 	apiRoute.Get("/userinfo", baiduStorage.UserInfo)
 	apiRoute.Get("/getpwd/:shareid", baiduStorage.GetPasswd)

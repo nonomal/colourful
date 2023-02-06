@@ -307,6 +307,16 @@ type ShareForever struct {
 	ShowMsg  string `json:"show_msg"`
 }
 
+type File struct {
+	Errno int `json:"errno"`
+	List  []struct {
+		ServerFilename string `json:"server_filename"`
+		FsId           int64  `json:"fs_id"`
+		Path           string `json:"path"`
+		Isdir          int    `json:"isdir"`
+	} `json:"list"`
+}
+
 func NewBaiduStorage(cookie string) *BaiduStorage {
 	baiduStorage := &BaiduStorage{
 		ReshareStatus: &ReshareStatus{
@@ -371,6 +381,20 @@ func (m *BaiduStorage) test() error {
 	}
 	m.LoginInfo = &cr.LoginInfo
 	return nil
+}
+
+func (m *BaiduStorage) Files(c *fiber.Ctx) error {
+	dir := c.Query("dir", "/")
+	num := c.Query("num", "10")
+	page := c.Query("page", "1")
+	url := fmt.Sprintf("https://pan.baidu.com/api/list?order=time&desc=1&num=%s&page=%s&dir=%s", num, page, dir)
+	data, err := m.doRequest(url, http.MethodGet, nil)
+	if err != nil {
+		return err
+	}
+	res := &File{}
+	json.Unmarshal(data, res)
+	return c.JSON(res)
 }
 
 func (m *BaiduStorage) ShareFiles(c *fiber.Ctx) error {
