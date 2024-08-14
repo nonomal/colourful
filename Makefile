@@ -1,5 +1,5 @@
 name = colourful
-version = v1.1.2
+version = v1.1.3
 
 build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -o release/$(name)-$(version)-linux-arm main.go
@@ -14,13 +14,17 @@ build-win:
 cp-config:
 	cp config.yaml release/
 
+cp-front:
+	mkdir -p release/front
+	mv front/dist release/front
+
 package:
-	tar -czvf release/$(name)-$(version)-linux-arm.tar.gz release/$(name)-$(version)-linux-arm release/config.yaml
-	tar -czvf release/$(name)-$(version)-linux-arm64.tar.gz release/$(name)-$(version)-linux-arm64 release/config.yaml
-	tar -czvf release/$(name)-$(version)-linux-386.tar.gz release/$(name)-$(version)-linux-386 release/config.yaml
-	tar -czvf release/$(name)-$(version)-linux-amd64.tar.gz release/$(name)-$(version)-linux-amd64 release/config.yaml
-	tar -czvf release/$(name)-$(version)-windows-386.tar.gz release/$(name)-$(version)-windows-386.exe release/config.yaml
-	tar -czvf release/$(name)-$(version)-windows-amd64.tar.gz release/$(name)-$(version)-windows-amd64.exe release/config.yaml
+	tar -czvf release/$(name)-$(version)-linux-arm.tar.gz release/$(name)-$(version)-linux-arm release/config.yaml release/front/dist/
+	tar -czvf release/$(name)-$(version)-linux-arm64.tar.gz release/$(name)-$(version)-linux-arm64 release/config.yaml release/front/dist/
+	tar -czvf release/$(name)-$(version)-linux-386.tar.gz release/$(name)-$(version)-linux-386 release/config.yaml release/front/dist/
+	tar -czvf release/$(name)-$(version)-linux-amd64.tar.gz release/$(name)-$(version)-linux-amd64 release/config.yaml release/front/dist/
+	tar -czvf release/$(name)-$(version)-windows-386.tar.gz release/$(name)-$(version)-windows-386.exe release/config.yaml release/front/dist/
+	tar -czvf release/$(name)-$(version)-windows-amd64.tar.gz release/$(name)-$(version)-windows-amd64.exe release/config.yaml release/front/dist/
 	rm release/$(name)-$(version)-linux-arm
 	rm release/$(name)-$(version)-linux-arm64
 	rm release/$(name)-$(version)-linux-386
@@ -28,6 +32,7 @@ package:
 	rm release/$(name)-$(version)-windows-386.exe
 	rm release/$(name)-$(version)-windows-amd64.exe
 	rm release/config.yaml
+	rm -rf release/front
 
 build-image:
 	docker build --build-arg NAME=$(name) --build-arg VERSION=$(version) -t namedlxd/$(name):$(version) .
@@ -36,5 +41,5 @@ build-image:
 clean:
 	rm -rf release/*
 
-build: build-linux build-win cp-config build-image package
+build: build-linux build-win cp-config cp-front package
 
